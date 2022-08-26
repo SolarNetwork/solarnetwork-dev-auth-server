@@ -1,0 +1,60 @@
+plugins {
+    id 'java'
+	id 'org.springframework.boot' version '2.7.3'
+}
+
+apply plugin: 'java'
+apply plugin: 'io.spring.dependency-management'
+
+repositories {
+    mavenCentral()
+}
+
+dependencyManagement {
+	imports {
+		mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
+	}
+}
+
+description = 'SolarNetwork Developer Authorization Server'
+version = '1.0.0'
+archivesBaseName = 'solarnet-dev-auth-server'
+
+dependencies {
+	// Spring
+	implementation 'org.springframework.boot:spring-boot-starter-cache'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.security:spring-security-oauth2-authorization-server:0.3.1'
+	
+	// JCache
+	implementation 'javax.cache:cache-api'
+	implementation 'org.ehcache:ehcache'
+
+	// JSON
+	implementation 'com.fasterxml.jackson.core:jackson-annotations'
+	implementation 'com.fasterxml.jackson.core:jackson-core'
+	implementation 'com.fasterxml.jackson.core:jackson-databind'
+	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+	
+	// Utilities
+	implementation 'org.bouncycastle:bcprov-jdk18on:1.71.1'
+	implementation 'org.bouncycastle:bcpkix-jdk18on:1.71.1'
+	implementation 'org.slf4j:slf4j-api'
+	
+	// Testing
+	testImplementation 'ch.qos.logback:logback-classic'
+	testImplementation 'org.hamcrest:hamcrest-library'
+	testImplementation 'org.junit.jupiter:junit-jupiter'
+	testImplementation 'org.mockito:mockito-core'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+}
+
+jar.manifest {
+    attributes('Implementation-Version': version)
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

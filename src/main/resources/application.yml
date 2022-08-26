@@ -1,0 +1,43 @@
+app:
+  oauth:
+    scopes:
+      - "oscp-fp-cp/cp"
+      - "oscp-fp-co/co"
+    client-id: "dev-client"
+    client-secret: "{noop}dev-client-secret"
+    keystore:
+      path: "var/keystore"
+      password: "Secret.123"
+      alias: "auth-server"
+
+logging:
+  level:
+    ROOT: "INFO"
+  pattern:
+    console: "${LOG_LEVEL_PATTERN:%5p} %-40.40logger{39}: %m%n${LOG_EXCEPTION_CONVERSION_WORD:%wEx}"
+    file:  "%d{yyyy-MM-dd HH:mm:ss.SSS} ${LOG_LEVEL_PATTERN:%5p} %-40.40logger{39} : %m%n${LOG_EXCEPTION_CONVERSION_WORD:%wEx}"
+
+server:
+  compression:
+    enabled: true
+    mime-types: "application/json,application/javascript,image/svg+xml,text/css,text/html,text/plain,text/xml"
+    min-response-size: 2048
+  error.whitelabel.enabled: false
+  port: 9333
+  servlet:
+    context-path: "/"
+  tomcat:
+    max-swallow-size: -1
+    threads:
+      min-spare: 1
+      max: 50
+
+---
+spring:
+  config.activate.on-profile: "development"
+
+debug: true
+
+logging:
+  level:
+    net.solarnetwork: "DEBUG"

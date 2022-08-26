@@ -1,0 +1,11 @@
+.DS_Store
+.gradle
+*.log
+*.swp
+test.jpage
+bin/
+build/
+target/
+var/
+/*.properties
+/*.yml
