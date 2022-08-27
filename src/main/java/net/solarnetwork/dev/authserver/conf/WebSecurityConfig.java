@@ -28,11 +28,15 @@ import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -50,6 +54,7 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.config.ProviderSettings;
+import org.springframework.security.oauth2.server.authorization.config.TokenSettings;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
@@ -69,6 +74,8 @@ import net.solarnetwork.dev.authserver.util.KeyStoreUtils;
  */
 @Configuration
 public class WebSecurityConfig {
+
+	private static final Logger log = LoggerFactory.getLogger(WebSecurityConfig.class);
 
 	@Value("${server.port:9333}")
 	private int serverPort = 9333;
@@ -131,6 +138,8 @@ public class WebSecurityConfig {
 				.authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
 				.scopes(s -> s.addAll(scopes))
 				.clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
+				.tokenSettings(
+						TokenSettings.builder().accessTokenTimeToLive(Duration.ofHours(1)).build())
 				.build();
 
 		return new InMemoryRegisteredClientRepository(registeredClient);
@@ -143,6 +152,9 @@ public class WebSecurityConfig {
 		String kid = DigestUtils.md5DigestAsHex(publicKey.getEncoded());
 		RSAKey rsaKey = new RSAKey.Builder(publicKey).privateKey(privateKey).keyID(kid).build();
 		JWKSet jwkSet = new JWKSet(rsaKey);
+
+		log.info("Loaded JSON Web Key Set kid %s".formatted(kid));
+
 		return new ImmutableJWKSet<>(jwkSet);
 	}
 
@@ -153,14 +165,21 @@ public class WebSecurityConfig {
 				PrivateKey pk = (PrivateKey) store.getKey(keyStoreAlias, keyStorePassword.toCharArray());
 				Certificate[] chain = store.getCertificateChain(keyStoreAlias);
 				Certificate cert = chain[0];
+				if ( cert instanceof X509Certificate x509 ) {
+					log.info("Loaded existing key store %s with self-signed certificate %s"
+							.formatted(keyStorePath, x509.getSubjectX500Principal().getName()));
+				}
 				return new KeyPair(cert.getPublicKey(), pk);
 			}
+
 			KeyPair kp = KeyStoreUtils.generateRsaKey();
 			Certificate cert = KeyStoreUtils.createSignedCertificate(kp,
 					"CN=SolarNetwork Dev Auth Server,OU=Development,O=SolarNetwork");
 			store.setKeyEntry(keyStoreAlias, kp.getPrivate(), keyStorePassword.toCharArray(),
 					new Certificate[] { cert });
 			KeyStoreUtils.saveKeyStore(store, keyStorePassword, keyStorePath);
+			log.info("!!! Generated new server key pair and saved to key store %s"
+					.formatted(keyStorePath));
 			return kp;
 		} catch ( Exception e ) {
 			throw new IllegalStateException("Error loading key store [%s]".formatted(keyStorePath), e);
@@ -174,6 +193,6 @@ public class WebSecurityConfig {
 
 	@Bean
 	public ProviderSettings providerSettings() {
-		return ProviderSettings.builder().build();
+		return ProviderSettings.builder().issuer("http://localhost:%d".formatted(serverPort)).build();
 	}
 }

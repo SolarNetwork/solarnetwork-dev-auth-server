@@ -1,8 +1,8 @@
 app:
   oauth:
     scopes:
-      - "oscp-fp-cp/cp"
-      - "oscp-fp-co/co"
+      - "good"
+      - "times"
     client-id: "dev-client"
     client-secret: "{noop}dev-client-secret"
     keystore:
